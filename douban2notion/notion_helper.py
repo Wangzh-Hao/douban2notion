@@ -5,6 +5,8 @@ import re
 from notion_client import Client
 from retrying import retry
 
+from douban2notion.heatmap_utils import is_heatmap_embed_url
+
 from douban2notion.utils import (
     format_date,
     get_date,
@@ -39,6 +41,8 @@ class NotionHelper:
     image_dict = {}
     def __init__(self,type):
         is_movie = True if type=="movie" else False
+        self.type = type
+        self.heatmap_block_id = None
         page_url = os.getenv("NOTION_MOVIE_URL") if is_movie else os.getenv("NOTION_BOOK_URL")
         notion_token = os.getenv("NOTION_TOKEN")
         if not notion_token:
@@ -116,7 +120,9 @@ class NotionHelper:
                     child.get("child_database").get("title")
                 ] = child.get("id")
             elif child["type"] == "embed" and child.get("embed").get("url"):
-                if "heatmap" in child.get("embed").get("url"):
+                if is_heatmap_embed_url(
+                    child.get("embed").get("url"), self.type
+                ):
                     self.heatmap_block_id = child.get("id")
             # 如果子块有子块，递归调用函数
             if "has_children" in child and child["has_children"]:
